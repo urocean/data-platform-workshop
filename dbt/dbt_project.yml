@@ -1,0 +1,82 @@
+name: 'recommendations'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  recommendations:
+    +materialized: table
+    +schema: dwh
+
+models/schema.yml
+version: 2
+
+sources:
+  - name: raw
+    database: your-project
+    schema: raw
+    tables:
+      - name: clicks
+      - name: orders
+
+models:
+  - name: popular_products
+    description: "Агрегация кликов по товарам за последний час (пример)"
+    columns:
+      - name: product_id
+        tests:
+          - not_null
+      - name: click_count
+  - name: top_products
+    description: "Итоговая витрина с объединением кликов и заказов"
+    columns:
+      - name: product_id
+      - name: score
+
+
+models/popular_products.sql
+{{ config(materialized='table') }}
+
+SELECT
+    product_id,
+    COUNT(*) AS click_count,
+    MAX(timestamp) AS last_click
+FROM {{ source('raw', 'clicks') }}
+WHERE timestamp >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR))
+GROUP BY product_id
+
+models/top_products.sql
+{{ config(materialized='table') }}
+
+WITH orders_agg AS (
+    SELECT
+        product_id,
+        SUM(quantity) AS total_orders,
+        AVG(price) AS avg_price
+    FROM {{ source('raw', 'orders') }}
+    GROUP BY product_id
+)
+
+SELECT
+    p.product_id,
+    p.click_count,
+    o.total_orders,
+    o.avg_price,
+    (p.click_count * 0.7 + o.total_orders * 0.3) AS score
+FROM {{ ref('popular_products') }} p
+LEFT JOIN orders_agg o ON p.product_id = o.product_id
+ORDER BY score DESC
+LIMIT 10

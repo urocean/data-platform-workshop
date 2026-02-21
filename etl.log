@@ -1,0 +1,61 @@
+[2026-02-21 18:20:01.737076] Запуск ETL...
+Traceback (most recent call last):
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 95, in <module>
+    run_etl()
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 13, in run_etl
+    consumer = KafkaConsumer(
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/consumer/group.py", line 397, in __init__
+    self._client = self.config['kafka_client'](metrics=self._metrics, **self.config)
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 262, in __init__
+    self.config['api_version'] = self.check_version()
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 1076, in check_version
+    raise Errors.NoBrokersAvailable()
+kafka.errors.NoBrokersAvailable: NoBrokersAvailable
+[2026-02-21 18:30:02.033559] Запуск ETL...
+Traceback (most recent call last):
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 95, in <module>
+    run_etl()
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 13, in run_etl
+    consumer = KafkaConsumer(
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/consumer/group.py", line 397, in __init__
+    self._client = self.config['kafka_client'](metrics=self._metrics, **self.config)
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 262, in __init__
+    self.config['api_version'] = self.check_version()
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 1076, in check_version
+    raise Errors.NoBrokersAvailable()
+kafka.errors.NoBrokersAvailable: NoBrokersAvailable
+[2026-02-21 18:40:01.335419] Запуск ETL...
+Traceback (most recent call last):
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 95, in <module>
+    run_etl()
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 13, in run_etl
+    consumer = KafkaConsumer(
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/consumer/group.py", line 397, in __init__
+    self._client = self.config['kafka_client'](metrics=self._metrics, **self.config)
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 262, in __init__
+    self.config['api_version'] = self.check_version()
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 1076, in check_version
+    raise Errors.NoBrokersAvailable()
+kafka.errors.NoBrokersAvailable: NoBrokersAvailable
+[2026-02-21 18:50:01.655008] Запуск ETL...
+Traceback (most recent call last):
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 95, in <module>
+    run_etl()
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 13, in run_etl
+    consumer = KafkaConsumer(
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/consumer/group.py", line 397, in __init__
+    self._client = self.config['kafka_client'](metrics=self._metrics, **self.config)
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 262, in __init__
+    self.config['api_version'] = self.check_version()
+  File "/home/vaosina/.local/lib/python3.9/site-packages/kafka/client_async.py", line 1076, in check_version
+    raise Errors.NoBrokersAvailable()
+kafka.errors.NoBrokersAvailable: NoBrokersAvailable
+[2026-02-21 19:00:01.961945] Запуск ETL...
+Traceback (most recent call last):
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 95, in <module>
+    run_etl()
+  File "/home/vaosina/data-platform-workshop/simple_etl.py", line 87, in run_etl
+    conn.execute("INSERT INTO top_products VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)", 
+_duckdb.BinderException: Binder Error: table top_products has 2 columns but 6 values were supplied
+[2026-02-21 19:10:02.018731] Запуск ETL...
+Нет данных в Kafka
