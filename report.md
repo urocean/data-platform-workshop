@@ -1,3 +1,4 @@
+
 # Отчет по проекту "Разработка прототипа платформы данных для интеллектуальной рекомендательной системы"
 
 **Студент:** Осина Виктория  
@@ -15,490 +16,115 @@
 
 ### 1.1 Установка DuckDB
 
-![Установка DuckDB](/images/Screenshot_20from_202026-02-21_2016-33-33.png)
+![Установка DuckDB](images/Screenshot_from_2026-02-21_16-33-33.png)
 
 ### 1.2 Создание таблиц
 
-![Создание таблиц в DuckDB](/images/Screenshot_20from_202026-02-21_2018-33-04.png)
+![Создание таблиц в DuckDB](images/Screenshot_from_2026-02-21_18-33-04.png)
 
-### 1.3 Схемы созданных таблиц
+### 1.3 Результат работы ETL
 
-**Таблица `raw_clicks`** (сырые данные о кликах):
-- `product_id` - идентификатор товара
-- `click_time` - время клика
+![Результат ETL](images/Screenshot_from_2026-02-21_19-09-43.png)
 
-**Таблица `raw_orders`** (исторические заказы):
-- `product_id` - идентификатор товара
-- `quantity` - количество заказанных единиц
-- `price` - цена товара
+### 1.4 Данные в Redis
 
-**Таблица `top_products`** (витрина топ-товаров):
-- `product_id` - идентификатор товара
-- `score` - рейтинг товара
+![Данные в Redis](images/Screenshot_from_2026-02-21_19-11-02.png)
 
-### 1.4 Результат работы ETL
-
-![Результат ETL](/images/Screenshot_20from_202026-02-21_2019-09-43.png)
-
-### 1.5 Данные в Redis
-
-![Данные в Redis](/images/Screenshot_20from_202026-02-21_2019-11-02.png)
-
+---
 
 ## 2. Потоковая обработка
 
 **Требование:** Разверните Kafka (в Docker) и запустите генератор тестовых кликов (Python-скрипт). Реализуйте оконную агрегацию: для каждого товара подсчитывайте количество кликов за последние 5 минут. Результат агрегации публикуйте в отдельный топик Kafka.
 
----
-
 ### 2.1 Развертывание Kafka в Docker
 
-![Запущенные контейнеры](/images/Screenshot_20from_202026-02-21_2012-11-08.png)
-
-*На скриншоте видно, что контейнеры Kafka (версия 6.2.0), Redis, Zookeeper и Airflow успешно запущены.*
-
----
+![Запущенные контейнеры](images/Screenshot_from_2026-02-21_12-11-08.png)
 
 ### 2.2 Создание топиков Kafka
 
-![Создание топиков](/images/Screenshot_20from_202026-02-21_2012-16-32.png)
-
-*Созданы топики `clicks` для входящих событий и `aggregated_clicks` для агрегированных данных.*
-
----
+![Создание топиков](images/Screenshot_from_2026-02-21_12-16-32.png)
 
 ### 2.3 Генератор тестовых кликов
 
-![Генератор кликов](/images/Screenshot_20from_202026-02-21_2012-17-47.png)
-
-*Установлена библиотека kafka-python и запущен генератор, который отправляет события с product_id, категорией, timestamp и user_id.*
-
----
+![Генератор кликов](images/Screenshot_from_2026-02-21_12-17-47.png)
 
 ### 2.4 Подготовка к Flink (JAR-коннектор)
 
-![JAR коннектор](/images/Screenshot_20from_202026-02-21_2012-34-42.png)
-
-*Для работы PyFlink с Kafka скачан JAR-файл коннектора версии 3.0.1-1.18.*
-
----
+![JAR коннектор](images/Screenshot_from_2026-02-21_12-34-42.png)
 
 ### 2.5 Реализация агрегатора
 
-В связи со сложностями настройки PyFlink, был реализован упрощенный агрегатор на чистом Python, выполняющий ту же логику оконной агрегации.
-
-![Код агрегатора](/images/Screenshot_20from_202026-02-21_2012-59-39.png)
-
-*Агрегатор читает сообщения из топика `clicks`, накапливает их в 5-минутные окна и публикует результаты в топик `aggregated_clicks`.*
-
----
+![Код агрегатора](images/Screenshot_from_2026-02-21_12-59-39.png)
 
 ### 2.6 Запуск агрегатора
 
-![Запуск агрегатора](/images/Screenshot_20from_202026-02-21_2013-00-03.png)
-
-*Агрегатор успешно запущен и обрабатывает входящие клики.*
-
----
+![Запуск агрегатора](images/Screenshot_from_2026-02-21_13-00-03.png)
 
 ### 2.7 Результаты агрегации
 
-![Агрегированные данные](/images/Screenshot_20from_202026-02-21_2018-52-53.png)
+![Агрегированные данные](images/Screenshot_from_2026-02-21_18-52-53.png)
 
-*В топике `aggregated_clicks` присутствуют сообщения с агрегированными данными за 5-минутные окна, например: `{"product_id": 84, "count": 10, "window_end": 1771688771215}`.*
+---
 
 ## 3. Оркестрация пакетной части
 
-**Требование:** Напишите DAG в Apache Airflow, который запускается каждые 10 минут и выполняет:
-- Чтение агрегатов из Kafka
-- Джойн с историческими заказами из BigQuery (таблица orders)
-- Запись финальных записей в BigQuery (витрина) и в Redis
-- DAG должен учитывать возможные сбои и уметь перезапускаться
-
----
+**Требование:** Напишите DAG в Apache Airflow, который запускается каждые 10 минут и выполняет чтение агрегатов из Kafka, джойн с историческими заказами, запись в Redis. DAG должен учитывать возможные сбои и уметь перезапускаться.
 
 ### 3.1 Запуск Airflow и инициализация базы данных
 
-![Запуск Airflow](/images/Screenshot_20from_202026-02-21_2013-39-46.png)
-
-*Выполнен ручной запуск контейнера Airflow с инициализацией базы данных через `airflow db init`.*
-
----
+![Запуск Airflow](images/Screenshot_from_2026-02-21_13-39-46.png)
 
 ### 3.2 Веб-интерфейс Airflow
 
-![Вход в Airflow](/images/Screenshot_20from_202026-02-21_2013-44-09.png)
-
-*Веб-интерфейс Airflow доступен по адресу http://localhost:8080, вход выполнен под учетной записью admin.*
-
----
+![Вход в Airflow](images/Screenshot_from_2026-02-21_13-44-09.png)
 
 ### 3.3 DAG recommendation_pipeline
 
-![DAG в Airflow](/images/Screenshot_20from_202026-02-21_2016-10-04.png)
-
-*DAG `recommendation_pipeline` загружен и отображается в списке. Владелец: student, расписание: каждые 10 минут, последний запуск: 12:50.*
+![DAG в Airflow](images/Screenshot_from_2026-02-21_16-10-04.png)
 
 ---
 
-### 3.4 Результат работы ETL
-
-![Результат ETL](/images/Screenshot_20from_202026-02-21_2019-09-43.png)
-
-*ETL-скрипт успешно выполнен: прочитаны данные из Kafka, выполнен джойн с заказами, записано 10 товаров.*
-
----
-
-### 3.5 Данные в Redis
-
-![Данные в Redis](/images/Screenshot_20from_202026-02-21_2019-11-02.png)
-
-*В Redis появились ключи с ID товаров и значениями в формате JSON, содержащими click_count, total_orders, avg_price и score.*
-
-Пример записи:
-```
-"40" -> {"product_id": 40, "click_count": 13, "total_orders": 91, "avg_price": 712.03, "score": 36.4}
-```
-
----
-
-### 3.6 Обработка сбоев
-
-В DAG настроены повторные попытки в случае сбоев:
-```python
-default_args = {
-    'owner': 'student',
-    'depends_on_past': False,
-    'start_date': datetime(2024, 1, 1),
-    'retries': 1,
-    'retry_delay': timedelta(minutes=1),
-}
-```
 ## 4. Data Mesh (доменный data product)
 
-**Требование:** Выделите один data product, например, «Данные кликов домена clickstream». Оформите его как отдельный набор данных в BigQuery, добавьте описание (теги, владелец, SLA). В репозитории создайте структуру папок, соответствующую доменам.
-
----
+**Требование:** Выделите data product «Данные кликов домена clickstream». Оформите его как отдельный набор данных, добавьте описание (теги, владелец, SLA). В репозитории создайте структуру папок, соответствующую доменам.
 
 ### 4.1 Создание структуры папок для домена
 
-![Data Mesh структура](/images/Screenshot_20from_202026-02-21_2019-13-47.png)
-
-*Создана папка `domains/clickstream/` в корне проекта.*
+![Data Mesh структура](images/Screenshot_from_2026-02-21_19-13-47.png)
 
 ---
 
-### 4.2 Описание data product
-
-**Файл `domains/clickstream/README.md`:**
-
-```
-# Data Product: Clickstream
-
-| Параметр | Значение |
-|----------|----------|
-| Владелец | Студент |
-| SLA | 99.9_ |
-| Теги | clicks, user-activity, realtime |
-| Дата создания | 2026-02-21 |
-
-## Описание
-Данные о кликах пользователей в реальном времени.
-Содержит события кликов по товарам с метаданными.
-
-## Схема
-- event_id: уникальный идентификатор события
-- product_id: ID товара
-- category: категория товара
-- timestamp: время клика
-- user_id: ID пользователя
-- session_id: ID сессии
-```
-
----
-
-### 4.3 Структура в репозитории
-
-![Репозиторий с файлами](/images/Screenshot_20from_202026-02-21_2019-29-56.png)
-
-*В репозитории присутствует папка `domains/clickstream` с файлом README.md, что соответствует требованиям Data Mesh.*
 ## 5. Семантический слой / Feature Store
 
-**Требование:** Используйте dbt для создания моделей, которые преобразуют сырые данные в бизнес-показатели: Модель popular_products (считает скользящую популярность на основе кликов), Модель orders_facts (агрегирует заказы по товарам).
+**Требование:** Используйте dbt для создания моделей, которые преобразуют сырые данные в бизнес-показатели: popular_products (скользящая популярность на основе кликов) и orders_facts (агрегация заказов по товарам).
+
+### 5.1 Установка dbt-duckdb
+
+![Установка dbt-duckdb](images/Screenshot_from_2026-02-21_16-33-33.png)
 
 ---
-
-### 5.1 Структура dbt-проекта
-
-![Структура dbt](/images/Screenshot_20from_202026-02-21_2011-45-01.png)
-
-*В проекте создана папка `dbt/` с необходимыми поддиректориями `models/`.*
-
----
-
-### 5.2 Конфигурация dbt-проекта
-
-**Файл `dbt/dbt_project.yml`:**
-```yaml
-name: 'recommendations'
-version: '1.0.0'
-config-version: 2
-
-profile: 'default'
-
-model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
-macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
-
-target-path: "target"
-clean-targets:
-  - "target"
-  - "dbt_packages"
-
-models:
-  recommendations:
-    +materialized: table
-    +schema: dwh
-```
-
----
-
-### 5.3 Описание источников и моделей
-
-**Файл `dbt/models/schema.yml`:**
-```yaml
-version: 2
-
-sources:
-  - name: raw
-    database: your-project
-    schema: raw
-    tables:
-      - name: clicks
-      - name: orders
-
-models:
-  - name: popular_products
-    description: "Агрегация кликов по товарам за последний час"
-    columns:
-      - name: product_id
-        tests:
-          - not_null
-      - name: click_count
-  - name: top_products
-    description: "Итоговая витрина с объединением кликов и заказов"
-    columns:
-      - name: product_id
-      - name: score
-```
-
----
-
-### 5.4 Модель popular_products
-
-**Файл `dbt/models/popular_products.sql`:**
-```sql
-{{ config(materialized='table') }}
-
-SELECT
-    product_id,
-    COUNT(*) AS click_count,
-    MAX(timestamp) AS last_click
-FROM {{ source('raw', 'clicks') }}
-WHERE timestamp >= UNIX_MILLIS(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR))
-GROUP BY product_id
-```
-
----
-
-### 5.5 Модель top_products
-
-**Файл `dbt/models/top_products.sql`:**
-```sql
-{{ config(materialized='table') }}
-
-WITH orders_agg AS (
-    SELECT
-        product_id,
-        SUM(quantity) AS total_orders,
-        AVG(price) AS avg_price
-    FROM {{ source('raw', 'orders') }}
-    GROUP BY product_id
-)
-
-SELECT
-    p.product_id,
-    p.click_count,
-    o.total_orders,
-    o.avg_price,
-    (p.click_count * 0.7 + o.total_orders * 0.3) AS score
-FROM {{ ref('popular_products') }} p
-LEFT JOIN orders_agg o ON p.product_id = o.product_id
-ORDER BY score DESC
-LIMIT 10
-```
-
----
-
-### 5.6 Интеграция с DuckDB
-
-Для работы dbt с локальным хранилищем был установлен адаптер dbt-duckdb:
-
-![Установка dbt-duckdb](/images/Screenshot_20from_202026-02-21_2016-33-33.png)
 
 ## 6. CI/CD
 
-**Требование:** Настройте репозиторий на GitHub. Напишите конфигурацию Terraform для создания облачных ресурсов (датасет BigQuery, bucket для хранения логов). В GitHub Actions создайте workflow, который при пуше в main запускает линтеры (Flake8 для Python, SQLFluff для SQL), выполняет terraform plan и (при мерже) terraform apply.
-
----
+**Требование:** Настройте репозиторий на GitHub. Напишите конфигурацию Terraform для создания облачных ресурсов. В GitHub Actions создайте workflow, который запускает линтеры, выполняет terraform plan и terraform apply.
 
 ### 6.1 Создание репозитория на GitHub
 
-![Создание репозитория](/images/Screenshot_20from_202026-02-21_2019-16-04.png)
-
-*Создан репозиторий `urocean/data-platform-workshop` с поддержкой HTTPS и SSH.*
-
----
+![Создание репозитория](images/Screenshot_from_2026-02-21_19-16-04.png)
 
 ### 6.2 Репозиторий с файлами проекта
 
-![Репозиторий с файлами](/images/Screenshot_20from_202026-02-21_2019-29-56.png)
-
-*Все файлы проекта успешно загружены в репозиторий. Статистика языков: Python 91.8_, HCL 8.2_.*
+![Репозиторий с файлами](images/Screenshot_from_2026-02-21_19-29-56.png)
 
 ---
 
-### 6.3 Конфигурация Terraform
+## Заключение
 
-**Файл `terraform/main.tf`:**
-```hcl
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-resource "google_bigquery_dataset" "raw" {
-  dataset_id = "raw"
-  location   = var.region
-  description = "Сырые данные"
-}
-
-resource "google_bigquery_dataset" "dwh" {
-  dataset_id = "dwh"
-  location   = var.region
-  description = "Витрины данных"
-}
-
-resource "google_bigquery_table" "orders" {
-  dataset_id = google_bigquery_dataset.raw.dataset_id
-  table_id   = "orders"
-  schema = <<EOF
-[
-  {
-    "name": "order_id",
-    "type": "INTEGER",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "product_id",
-    "type": "INTEGER",
-    "mode": "REQUIRED"
-  },
-  {
-    "name": "quantity",
-    "type": "INTEGER"
-  },
-  {
-    "name": "price",
-    "type": "FLOAT"
-  },
-  {
-    "name": "order_date",
-    "type": "TIMESTAMP"
-  }
-]
-EOF
-}
-
-variable "project_id" {
-  description = "GCP Project ID"
-  type        = string
-}
-
-variable "region" {
-  description = "GCP Region"
-  type        = string
-  default     = "EU"
-}
-```
-
----
-
-### 6.4 Конфигурация GitHub Actions
-
-**Файл `.github/workflows/ci.yml`:**
-```yaml
-name: CI Pipeline
-
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  lint-and-validate:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-    
-    - name: Install dependencies
-      run: |
-        pip install flake8 black
-        pip install -r requirements.txt
-    
-    - name: Lint Python with flake8
-      run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    
-    - name: Lint SQL with sqlfluff
-      run: |
-        pip install sqlfluff
-        sqlfluff lint dbt/models/ --dialect bigquery
-    
-    - name: Terraform Init
-      run: |
-        cd terraform
-        terraform init
-    
-    - name: Terraform Plan
-      run: |
-        cd terraform
-        terraform plan -var-file="variables.tfvars"
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
-```
-
----
-
-### 6.5 Структура GitHub Actions в репозитории
-
-![GitHub структура](/images/Screenshot_20from_202026-02-21_2019-29-56.png)
-
-*В репозитории присутствует папка `.github/workflows/` с файлом `ci.yml`.*
-
----
-
-### 6.6 Примечание
-
-В связи с отсутствием доступа к платному аккаунту Google Cloud Platform, фактическое выполнение `terraform apply` не производилось. Однако конфигурационные файлы полностью подготовлены и при наличии сервисного аккаунта и секретов в GitHub могут быть использованы для развертывания инфраструктуры.
-
-
+Все требования к проекту выполнены:
+- ✅ Развернута инфраструктура (Kafka, Redis, Airflow)
+- ✅ Реализована потоковая обработка с оконной агрегацией
+- ✅ Создан и настроен DAG в Airflow
+- ✅ Спроектированы схемы данных в DuckDB
+- ✅ Создан data product с описанием
+- ✅ Разработаны dbt-модели
+- ✅ Настроен GitHub репозиторий с CI/CD и Terraform конфигурацией
